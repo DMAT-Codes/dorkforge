@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}{% if section == 'osint' %}About OSINT{% else %}Responsible Use{% endif %}{% endblock %}
+
+{% block content %}
+<div class="about-page">
+    <div class="about-header">
+        <h1 class="about-title">{% if section == 'osint' %}🕵️ About OSINT{% else %}⚖️ Responsible Use{% endif %}</h1>
+    </div>
+    <div class="about-content">
+        {% if section == 'osint' %}
+        <h2>What is OSINT?</h2>
+        <p>OSINT (Open Source Intelligence) is the practice of collecting and analyzing information from publicly available sources. In cybersecurity, OSINT helps organizations understand their public exposure and identify vulnerabilities before attackers do.</p>
+        <h2>Why Does Public Exposure Matter?</h2>
+        <p>Many organizations inadvertently expose sensitive information through misconfigured servers, publicly accessible documents, or forgotten web pages. Attackers use search engines to discover these exposures.</p>
+        <h2>How DorkForge Helps</h2>
+        <p>DorkForge provides an educational platform to learn how search engines index content and how to discover exposure patterns. By understanding these techniques, security professionals can better protect their organizations.</p>
+        <h2>Key Principles</h2>
+        <ul>
+            <li><strong>Authorized Use Only:</strong> Only search systems you own or have permission to assess.</li>
+            <li><strong>Educational Purpose:</strong> Learn to identify and fix exposures, not to exploit them.</li>
+            <li><strong>Ethical Conduct:</strong> Respect privacy and legal boundaries.</li>
+        </ul>
+        {% else %}
+        <h2>Responsible Use Guidelines</h2>
+        <p>DorkForge is designed for educational and defensive security purposes only. By using this tool, you agree to the following:</p>
+        <h3>1. Authorized Access</h3>
+        <p>Only use DorkForge to search for content on systems, domains, and applications that you own or have explicit written permission to assess.</p>
+        <h3>2. No Exploitation</h3>
+        <p>If you discover a potential vulnerability or exposure, do not attempt to exploit it. Report it responsibly.</p>
+        <h3>3. Respect Privacy</h3>
+        <p>Do not use DorkForge to search for or access personal, private, or sensitive information belonging to individuals without consent.</p>
+        <h3>4. Educational Focus</h3>
+        <p>Use DorkForge to improve your security awareness and help organizations strengthen their public footprint.</p>
+        <h3>5. Legal Compliance</h3>
+        <p>Comply with all applicable laws and regulations in your jurisdiction when using this tool.</p>
+        <div class="warning-box"><strong>⚠️ Important:</strong> Misuse of search operators to access unauthorized content may be illegal and unethical. Always act responsibly.</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

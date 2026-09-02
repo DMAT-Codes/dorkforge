@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Manual Builder{% endblock %}
+
+{% block content %}
+<div class="builder-page">
+    <div class="builder-header">
+        <div>
+            <h1 class="builder-title">🔍 Manual Query Builder</h1>
+            <p class="builder-subtitle">Fill in the fields below to build your Google dork query</p>
+        </div>
+    </div>
+
+    <div class="builder-simple">
+        <div class="builder-form-simple">
+            <div class="form-row">
+                <div class="form-group"><label class="form-label">Domain <span class="form-hint">(site:)</span></label><input type="text" id="domain" class="form-input" placeholder="example.com"></div>
+                <div class="form-group"><label class="form-label">File Type <span class="form-hint">(filetype:)</span></label>
+                    <select id="filetype" class="form-select">
+                        <option value="">Any</option>
+                        <option value="pdf">PDF</option><option value="doc">DOC</option><option value="docx">DOCX</option>
+                        <option value="xls">XLS</option><option value="xlsx">XLSX</option><option value="ppt">PPT</option>
+                        <option value="pptx">PPTX</option><option value="txt">TXT</option><option value="csv">CSV</option>
+                        <option value="log">LOG</option><option value="xml">XML</option><option value="json">JSON</option>
+                        <option value="sql">SQL</option><option value="php">PHP</option><option value="asp">ASP</option>
+                        <option value="jsp">JSP</option><option value="html">HTML</option><option value="js">JS</option>
+                        <option value="css">CSS</option><option value="zip">ZIP</option><option value="rar">RAR</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label class="form-label">Page Title <span class="form-hint">(intitle:)</span></label><input type="text" id="intitle" class="form-input" placeholder="annual report"></div>
+                <div class="form-group"><label class="form-label">URL Contains <span class="form-hint">(inurl:)</span></label><input type="text" id="inurl" class="form-input" placeholder="login"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label class="form-label">Page Text <span class="form-hint">(intext:)</span></label><input type="text" id="intext" class="form-input" placeholder="confidential"></div>
+                <div class="form-group"><label class="form-label">Exact Phrase</label><input type="text" id="exact" class="form-input" placeholder='"internal use only"'></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label class="form-label">Exclude Words <span class="form-hint">(-term)</span></label><input type="text" id="exclude" class="form-input" placeholder="word1 word2"></div>
+                <div class="form-group"><label class="form-label">Exclude Domain <span class="form-hint">(-site:)</span></label><input type="text" id="exclude_site" class="form-input" placeholder="wikipedia.org"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label class="form-label">Before Date <span class="form-hint">(before:)</span></label><input type="date" id="before_date" class="form-input"></div>
+                <div class="form-group"><label class="form-label">After Date <span class="form-hint">(after:)</span></label><input type="date" id="after_date" class="form-input"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label class="form-label">OR Conditions <span class="form-hint">(separate with commas)</span></label><input type="text" id="or_terms" class="form-input" placeholder="report, summary, analysis"></div>
+                <div class="form-group"><label class="form-label">Custom Terms</label><input type="text" id="custom" class="form-input" placeholder="inurl:admin intitle:login"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label class="form-label">Quick Templates</label>
+                    <select id="templateSelect" class="form-select">
+                        <option value="">Select a template to load...</option>
+                        <option value="research">🔬 Research Papers</option>
+                        <option value="documents">📄 Public Documents</option>
+                        <option value="technical">⚙️ Technical Documentation</option>
+                        <option value="news">📰 News & Articles</option>
+                        <option value="code">💻 Code & Documentation</option>
+                        <option value="academic">🎓 Academic Resources</option>
+                        <option value="organization">🏢 Organization-specific</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="query-section-simple">
+            <div class="query-header-simple">
+                <label class="section-label">🔍 Generated Query</label>
+                <div class="query-actions-simple">
+                    <button class="btn btn-sm btn-secondary" id="copyQueryBtn"><i class="fas fa-copy"></i> Copy</button>
+                    <button class="btn btn-sm btn-primary" id="openGoogleBtn"><i class="fas fa-external-link-alt"></i> Open in Google</button>
+                    <button class="btn btn-sm btn-success" id="saveQueryBtn"><i class="fas fa-save"></i> Save</button>
+                    <button class="btn btn-sm btn-danger" id="resetBtn"><i class="fas fa-undo"></i> Reset</button>
+                </div>
+            </div>
+            <div class="query-display" id="queryDisplay"><span class="query-placeholder">Fill in the fields above to build your query...</span></div>
+            <div class="query-interpretation" id="queryInterpretation"></div>
+        </div>
+
+        <div class="simple-footer">
+            <div class="simple-footer-section"><h4>📜 Recent History</h4><div id="historyList" class="simple-list"><span class="simple-empty">No history yet</span></div></div>
+            <div class="simple-footer-section"><h4>⭐ Saved Queries</h4><div id="savedList" class="simple-list"><span class="simple-empty">No saved queries yet</span></div></div>
+        </div>
+
+        <div class="responsible-notice">
+            <i class="fas fa-shield-alt"></i>
+            <span>🔒 <strong>Authorized research only.</strong> Only search systems, domains, and content you own or have explicit permission to assess.</span>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/builder.js') }}"></script>
+{% endblock %}

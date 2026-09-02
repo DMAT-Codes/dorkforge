@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}AI Assistant{% endblock %}
+
+{% block content %}
+<div class="ai-page">
+    <div class="ai-header">
+        <h1 class="ai-title">🤖 AI Assistant</h1>
+        <p class="ai-subtitle">Describe what you want to learn, and the AI will generate multiple educational queries with explanations.</p>
+    </div>
+
+    <div class="ai-container">
+        <div class="ai-input-section">
+            <label class="form-label">What are you trying to learn?</label>
+            <div class="ai-input-group">
+                <input type="text" id="goalInput" class="form-input" placeholder="e.g., Find admin panels, exposed PDFs, login pages">
+                <button id="generateBtn" class="btn btn-primary"><i class="fas fa-arrow-right"></i> Generate</button>
+            </div>
+            <div class="suggested-prompts">
+                <span class="suggested-label">Try:</span>
+                <button class="suggested-btn" data-prompt="Find admin panels and login pages">Admin Panels</button>
+                <button class="suggested-btn" data-prompt="Find exposed PDF documents">PDF Documents</button>
+                <button class="suggested-btn" data-prompt="Find configuration files">Config Files</button>
+                <button class="suggested-btn" data-prompt="Find backup files">Backups</button>
+                <button class="suggested-btn" data-prompt="Find directory listings">Directory Listings</button>
+            </div>
+        </div>
+
+        <div id="loadingIndicator" class="ai-loading" style="display: none;">
+            <i class="fas fa-spinner fa-spin"></i> Generating dorks...
+        </div>
+
+        <div id="aiResponse" class="ai-response" style="display: none;">
+            <div class="ai-section">
+                <h3 class="ai-section-title">💡 Understanding</h3>
+                <p id="aiUnderstanding" class="ai-section-content"></p>
+            </div>
+            <div class="ai-section">
+                <h3 class="ai-section-title">🔍 Generated Dorks</h3>
+                <div id="aiDorksList" class="ai-dorks-list"></div>
+                <div class="execute-all-container" id="executeAllContainer" style="display: none;">
+                    <button class="btn btn-primary" onclick="executeAllDorks()">
+                        <i class="fas fa-play"></i> Execute All Dorks (Open in Google)
+                    </button>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">Opens each query in a new tab. Use with caution.</p>
+                </div>
+            </div>
+            <div class="ai-section responsible-section">
+                <h3 class="ai-section-title">⚖️ Responsible Use</h3>
+                <p id="aiResponsible" class="ai-section-content"></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/ai.js') }}"></script>
+{% endblock %}

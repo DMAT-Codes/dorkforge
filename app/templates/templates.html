@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Template Library{% endblock %}
+
+{% block content %}
+<div class="templates-page">
+    <div class="templates-header">
+        <h1 class="templates-title">📚 Template Library</h1>
+        <p class="templates-subtitle">Browse educational dork patterns organized by category.</p>
+    </div>
+
+    {% if categories %}
+        {% for category, templates in categories.items() %}
+        <div class="template-category">
+            <h2 class="category-title">{{ category }}</h2>
+            <div class="template-grid">
+                {% for template in templates %}
+                <div class="template-card">
+                    <h3 class="template-name">{{ template.name }}</h3>
+                    <p class="template-description">{{ template.description }}</p>
+                    <div class="template-query">{{ template.query }}</div>
+                    <div class="template-details">
+                        <details><summary>Explanation</summary><p>{{ template.explanation }}</p></details>
+                        <details><summary>Security Relevance</summary><p>{{ template.security }}</p></details>
+                    </div>
+                    <div class="template-actions">
+                        <button class="btn btn-sm btn-secondary copy-template-btn" data-query="{{ template.query }}"><i class="fas fa-copy"></i> Copy</button>
+                        <button class="btn btn-sm btn-primary use-template-btn" data-query="{{ template.query }}"><i class="fas fa-arrow-right"></i> Use in Builder</button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p class="templates-empty">No templates available.</p>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.copy-template-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const query = this.dataset.query;
+            navigator.clipboard.writeText(query).then(() => {
+                const orig = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                setTimeout(() => { this.innerHTML = orig; }, 1500);
+            });
+        });
+    });
+    document.querySelectorAll('.use-template-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            sessionStorage.setItem('template_query', this.dataset.query);
+            window.location.href = "{{ url_for('builder.index') }}";
+        });
+    });
+    const templateQuery = sessionStorage.getItem('template_query');
+    if (templateQuery && window.location.pathname === "{{ url_for('builder.index') }}") {
+        // Will be handled in builder.js
+    }
+});
+</script>
+{% endblock %}

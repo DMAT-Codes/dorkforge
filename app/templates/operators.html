@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Operator Guide{% endblock %}
+
+{% block content %}
+<div class="operators-page">
+    <div class="operators-header">
+        <h1 class="operators-title">🎓 Google Operator Guide</h1>
+        <p class="operators-subtitle">Learn every Google search operator with examples and security context.</p>
+    </div>
+    <div class="operator-grid">
+        {% for op in operators %}
+        <div class="operator-card">
+            <h3 class="operator-name">{{ op.name }}</h3>
+            <div class="operator-syntax"><code>{{ op.syntax }}</code></div>
+            <p class="operator-description">{{ op.description }}</p>
+            <div class="operator-example"><strong>Example:</strong> <code>{{ op.example }}</code></div>
+            <div class="operator-security"><strong>🛡️ Security Relevance:</strong> {{ op.security }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

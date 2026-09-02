@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">
+                Search Smarter.<br>
+                <span class="hero-highlight">Understand Exposure.</span>
+            </h1>
+            <p class="hero-description">
+                Build advanced Google search queries without memorizing syntax. 
+                Learn OSINT, discover exposure patterns, and secure what you own.
+            </p>
+        </div>
+    </section>
+
+    <!-- Workflow Cards -->
+    <section class="workflows">
+        <div class="workflows-grid">
+            <!-- AI Assistant Card -->
+            <div class="workflow-card">
+                <div class="workflow-card-icon">🤖</div>
+                <h2 class="workflow-card-title">AI Assistant</h2>
+                <p class="workflow-card-description">
+                    Describe what you want to learn in plain English, and the AI will 
+                    explain operators and generate educational queries for you.
+                </p>
+                <a href="{{ url_for('ai.index') }}" class="btn btn-primary">
+                    <i class="fas fa-arrow-right"></i> Start AI Assistant
+                </a>
+            </div>
+
+            <!-- Manual Builder Card -->
+            <div class="workflow-card">
+                <div class="workflow-card-icon">🛠️</div>
+                <h2 class="workflow-card-title">Manual Builder</h2>
+                <p class="workflow-card-description">
+                    Build professional Google dork queries using structured fields. 
+                    Perfect for experienced users who know what they're looking for.
+                </p>
+                <a href="{{ url_for('builder.index') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-right"></i> Open Builder
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quick Info Section - NOW ALL CLICKABLE -->
+    <section class="quick-info">
+        <div class="quick-info-grid">
+            <!-- Template Library - Clickable -->
+            <a href="{{ url_for('templates.index') }}" class="quick-info-card-link">
+                <div class="quick-info-card">
+                    <div class="quick-info-icon">📚</div>
+                    <div>
+                        <h3 class="quick-info-title">Template Library</h3>
+                        <p class="quick-info-text">Browse educational dork patterns organized by category.</p>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Operator Guide - Clickable -->
+            <a href="{{ url_for('operators.index') }}" class="quick-info-card-link">
+                <div class="quick-info-card">
+                    <div class="quick-info-icon">🎓</div>
+                    <div>
+                        <h3 class="quick-info-title">Operator Guide</h3>
+                        <p class="quick-info-text">Learn every Google search operator with examples and security context.</p>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Responsible OSINT - Clickable -->
+            <a href="{{ url_for('about.responsible') }}" class="quick-info-card-link">
+                <div class="quick-info-card">
+                    <div class="quick-info-icon">🛡️</div>
+                    <div>
+                        <h3 class="quick-info-title">Responsible OSINT</h3>
+                        <p class="quick-info-text">Understand the ethics of search-engine reconnaissance and exposure awareness.</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </section>
+</div>
+{% endblock %}

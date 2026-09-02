@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}History{% endblock %}
+
+{% block content %}
+<div class="history-page">
+    <div class="history-header">
+        <h1 class="history-title">📜 Query History</h1>
+        <p class="history-subtitle">Your recently generated and opened queries.</p>
+        <button id="clearHistoryBtn" class="btn btn-danger btn-sm">Clear All</button>
+    </div>
+    <div id="historyList" class="history-list"><p class="history-empty">No history yet.</p></div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const historyList = document.getElementById('historyList');
+    const clearBtn = document.getElementById('clearHistoryBtn');
+
+    function renderHistory() {
+        const history = JSON.parse(localStorage.getItem('dorkforge_history') || '[]');
+        if (history.length === 0) {
+            historyList.innerHTML = '<p class="history-empty">No history yet.</p>';
+            return;
+        }
+        historyList.innerHTML = history.map((item, index) => `
+            <div class="history-item">
+                <div class="history-query">${item.query}</div>
+                <div class="history-meta">
+                    <span class="history-time">${new Date(item.timestamp).toLocaleString()}</span>
+                    <div class="history-actions">
+                        <button class="btn btn-sm btn-secondary copy-history" data-query="${item.query}"><i class="fas fa-copy"></i></button>
+                        <button class="btn btn-sm btn-primary open-history" data-query="${item.query}"><i class="fas fa-external-link-alt"></i></button>
+                        <button class="btn btn-sm btn-danger delete-history" data-index="${index}"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        document.querySelectorAll('.copy-history').forEach(btn => {
+            btn.addEventListener('click', function() {
+                navigator.clipboard.writeText(this.dataset.query);
+                const orig = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-check"></i>';
+                setTimeout(() => { this.innerHTML = orig; }, 1500);
+            });
+        });
+        document.querySelectorAll('.open-history').forEach(btn => {
+            btn.addEventListener('click', function() {
+                window.open(`https://www.google.com/search?q=${encodeURIComponent(this.dataset.query)}`, '_blank');
+            });
+        });
+        document.querySelectorAll('.delete-history').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const history = JSON.parse(localStorage.getItem('dorkforge_history') || '[]');
+                history.splice(parseInt(this.dataset.index), 1);
+                localStorage.setItem('dorkforge_history', JSON.stringify(history));
+                renderHistory();
+            });
+        });
+    }
+
+    clearBtn.addEventListener('click', function() {
+        if (confirm('Clear all history?')) {
+            localStorage.removeItem('dorkforge_history');
+            renderHistory();
+        }
+    });
+
+    renderHistory();
+});
+</script>
+{% endblock %}
