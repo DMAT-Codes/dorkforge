@@ -23,43 +23,39 @@ def generate():
             'error': 'Groq API key is missing. Please set GROQ_API_KEY in your .env file and restart the server.'
         }), 500
 
-    # Use a reliable model
-    model = current_app.config.get('GROQ_MODEL', 'mixtral-8x7b-32768')
+    # Use a reliable model with large context
+    model = current_app.config.get('GROQ_MODEL', 'llama-3.1-70b-versatile')
     api_url = current_app.config.get('GROQ_API_URL', 'https://api.groq.com/openai/v1/chat/completions')
 
-    system_prompt = f"""You are an expert OSINT and Google Dorking assistant. Generate **10 to 15** highly relevant, accurate, and diverse Google dork queries based on the user's goal.
+    system_prompt = f"""You are an expert OSINT and Google Dorking assistant. Your task is to generate **25 to 30 highly diverse, specific, and unique Google dork queries** based on the user's goal.
 
-**RULES:**
-- If the user mentions a specific domain (e.g., "nasa", "google", "microsoft"), use that exact domain with `site:` (e.g., `site:nasa.gov`). If no domain is mentioned, use `example.com`.
-- Generate a wide variety of queries covering different operators:
-  - site:, filetype:, intitle:, inurl:, intext:, 
-  - Exact phrase ("")
-  - Exclusion (-)
-  - OR
-  - before:, after:
-- Ensure each query is **realistic and useful** for security awareness or OSINT.
-- Provide a clear **explanation** and **security context** for each dork.
-- Respond **ONLY** with a valid JSON object. No extra text, no markdown, no code blocks.
+**ABSOLUTE RULES:**
+1. **Maximum number of dorks: 30**. Aim for 25–30; never fewer than 20.
+2. **Each dork must be distinct** – use different operator combinations, search angles, and targets.
+3. **Avoid simple variations** – changing one keyword or operator is not enough; use entirely different logical approaches.
+4. **Operator diversity**: Use a wide array of operators: `site:`, `filetype:`, `intitle:`, `inurl:`, `intext:`, exact phrase `" "`, exclusion `-`, `OR`, `before:`, `after:`, custom terms, parentheses `( )` for grouping, and nested conditions.
+5. **Be specific**: Queries should be detailed (e.g., `site:example.com intitle:"annual report" filetype:pdf intext:"2024"`).
+6. **Contextual relevance**: If the user mentions a domain (e.g., "nasa"), use it in `site:`; otherwise use `example.com`.
 
-**JSON STRUCTURE (exactly):**
+**Goal:** {goal}
+
+**STRUCTURE YOUR RESPONSE** exactly in this JSON format (no extra text, no markdown):
+
 {{
-    "understanding": "A brief, one-sentence summary of the user's goal.",
+    "understanding": "A brief one‑sentence summary of the user's goal.",
     "dorks": [
         {{
-            "name": "Short descriptive title",
+            "name": "A descriptive title (max 6 words)",
             "query": "The actual Google query string",
-            "explanation": "What this specific query finds.",
-            "security_context": "Why this matters for security awareness."
-        }}
+            "explanation": "What this query finds (10‑15 words)",
+            "security_context": "Why it matters (10‑15 words)"
+        }},
+        ...  // 25‑30 items
     ],
     "responsible_use": "Only search systems you own or have explicit permission to assess."
 }}
 
-**Important:** The query must be properly escaped for URL encoding (but keep it as a plain string). Use double quotes inside the query when needed, e.g., `intitle:"admin"`.
-
-**Goal:** {goal}
-
-Generate 10-15 diverse dorks that cover the user's request as comprehensively as possible."""
+Make every dork count – no filler. Provide the broadest possible coverage of the user's request."""
 
     user_prompt = f"User goal: {goal}"
 
@@ -74,11 +70,12 @@ Generate 10-15 diverse dorks that cover the user's request as comprehensively as
             {'role': 'system', 'content': system_prompt},
             {'role': 'user', 'content': user_prompt}
         ],
-        'temperature': 0.5,  # Slightly higher for creativity
+        'temperature': 0.7,          # Creative but controlled
+        'max_tokens': 3500,          # Allow longer responses
     }
 
     try:
-        response = requests.post(api_url, json=payload, headers=headers, timeout=60)
+        response = requests.post(api_url, json=payload, headers=headers, timeout=90)
         
         if response.status_code == 401:
             return jsonify({'error': 'Invalid Groq API key. Please check your GROQ_API_KEY in .env'}), 401
@@ -90,7 +87,7 @@ Generate 10-15 diverse dorks that cover the user's request as comprehensively as
         result = response.json()
         content = result['choices'][0]['message']['content'].strip()
 
-        # Try to parse JSON from the content
+        # Parse JSON from the AI response
         try:
             ai_response = json.loads(content)
         except json.JSONDecodeError:
@@ -108,21 +105,23 @@ Generate 10-15 diverse dorks that cover the user's request as comprehensively as
         if 'dorks' not in ai_response or not isinstance(ai_response['dorks'], list):
             return jsonify({'error': 'AI response missing required "dorks" array.'}), 500
 
-        if len(ai_response['dorks']) < 3:
+        # Ensure we have enough dorks (at least 15, but aim for 25)
+        if len(ai_response['dorks']) < 10:
             return jsonify({'error': 'AI generated too few dorks. Please try a broader goal.'}), 500
 
+        # Limit to 30 to avoid UI overload
+        if len(ai_response['dorks']) > 30:
+            ai_response['dorks'] = ai_response['dorks'][:30]
+
+        # Validate each dork has required fields
         for dork in ai_response['dorks']:
             if 'name' not in dork or 'query' not in dork:
                 return jsonify({'error': 'AI response missing required fields in a dork object.'}), 500
 
-        # Limit to 20 dorks max to avoid overwhelming UI
-        if len(ai_response['dorks']) > 20:
-            ai_response['dorks'] = ai_response['dorks'][:20]
-
         return jsonify(ai_response)
 
     except requests.exceptions.Timeout:
-        return jsonify({'error': 'The AI request timed out (60 seconds). Please try a simpler goal.'}), 504
+        return jsonify({'error': 'The AI request timed out (90 seconds). Please try a simpler goal.'}), 504
     except requests.exceptions.RequestException as e:
         return jsonify({'error': f'Network error calling Groq API: {str(e)}'}), 500
     except Exception as e:
