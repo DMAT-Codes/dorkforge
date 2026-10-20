@@ -1,5 +1,6 @@
 import json
 import re
+import time
 import requests
 from flask import current_app
 
@@ -69,23 +70,40 @@ def generate_dorks(goal, max_dorks=30):
             {'role': 'user', 'content': f'User goal: {goal}'},
         ],
         'temperature': 0.7,
-        'max_tokens': 3500,
+        'max_tokens': 1500,  # Lowered to prevent rate limiting
     }
 
-    # --- HTTP call ---
-    try:
-        response = requests.post(api_url, json=payload, headers=headers, timeout=90)
-    except requests.exceptions.Timeout:
-        raise GroqError('The AI request timed out (90 seconds). Please try a simpler goal.', 504)
-    except requests.exceptions.RequestException as exc:
-        raise GroqError(f'Network error calling Groq API: {exc}', 500)
+    # --- HTTP call with Retry Logic (Exponential Backoff) ---
+    MAX_RETRIES = 3
+    INITIAL_DELAY = 2
+    response = None
+
+    for attempt in range(MAX_RETRIES):
+        try:
+            response = requests.post(api_url, json=payload, headers=headers, timeout=90)
+        except requests.exceptions.Timeout:
+            raise GroqError('The AI request timed out (90 seconds). Please try a simpler goal.', 504)
+        except requests.exceptions.RequestException as exc:
+            raise GroqError(f'Network error calling Groq API: {exc}', 500)
+
+        # Check for rate limit (429)
+        if response.status_code == 429:
+            if attempt == MAX_RETRIES - 1:
+                raise GroqError('Rate limit exceeded after multiple retries. Please wait a minute and try again.', 429)
+            
+            delay = INITIAL_DELAY * (2 ** attempt)
+            print(f"[Groq API] Rate limit hit (429). Retrying in {delay} seconds...")
+            time.sleep(delay)
+        else:
+            # If it's not 429, break the loop to handle other status codes below
+            break
 
     # --- HTTP status handling ---
     if response.status_code == 401:
         raise GroqError('Invalid Groq API key. Please check GROQ_API_KEY.', 401)
-    if response.status_code == 429:
+    elif response.status_code == 429:
         raise GroqError('Rate limit exceeded. Please wait and try again.', 429)
-    if response.status_code != 200:
+    elif response.status_code != 200:
         raise GroqError(
             f'Groq API error (HTTP {response.status_code}): {response.text}',
             response.status_code

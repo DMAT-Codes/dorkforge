@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // ========== DOM References ==========
     const domain = document.getElementById('domain');
     const filetype = document.getElementById('filetype');
     const intitle = document.getElementById('intitle');
@@ -19,9 +20,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const openGoogleBtn = document.getElementById('openGoogleBtn');
     const saveBtn = document.getElementById('saveQueryBtn');
     const resetBtn = document.getElementById('resetBtn');
+    
     const historyList = document.getElementById('historyList');
     const savedList = document.getElementById('savedList');
 
+    // ========== Templates ==========
     const templates = {
         research: { domain: '', filetype: 'pdf', intitle: 'research paper', inurl: '', intext: '', exact: '', exclude: '', exclude_site: '', before: '', after: '', or: '', custom: '' },
         documents: { domain: '', filetype: 'pdf', intitle: 'report', inurl: '', intext: '', exact: '', exclude: '', exclude_site: '', before: '', after: '', or: '', custom: '' },
@@ -32,6 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
         organization: { domain: '', filetype: '', intitle: 'about', inurl: '', intext: '', exact: '', exclude: '', exclude_site: '', before: '', after: '', or: '', custom: '' }
     };
 
+    // ========== Build Query ==========
     function buildQuery() {
         const parts = [];
         const breakdown = [];
@@ -65,6 +69,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return query;
     }
 
+    // ========== Load Template ==========
     function loadTemplate(key) {
         if (!key || !templates[key]) return;
         const t = templates[key];
@@ -83,6 +88,7 @@ document.addEventListener('DOMContentLoaded', function() {
         buildQuery();
     }
 
+    // ========== Actions ==========
     function copyQuery() {
         const q = queryDisplay.textContent;
         if (q && q !== 'Fill in the fields above to build your query...') {
@@ -101,18 +107,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function saveQuery() {
-        const q = queryDisplay.textContent;
-        if (!q || q === 'Fill in the fields above to build your query...') { alert('No query to save!'); return; }
-        const saved = JSON.parse(localStorage.getItem('dorkforge_saved') || '[]');
-        saved.push({ query: q, timestamp: new Date().toISOString() });
-        localStorage.setItem('dorkforge_saved', JSON.stringify(saved));
-        renderSaved();
-        const orig = saveBtn.innerHTML;
-        saveBtn.innerHTML = '<i class="fas fa-check"></i> Saved!';
-        setTimeout(() => { saveBtn.innerHTML = orig; }, 1500);
-    }
-
     function resetForm() {
         domain.value = ''; filetype.value = ''; intitle.value = ''; inurl.value = ''; intext.value = '';
         exact.value = ''; exclude.value = ''; exclude_site.value = ''; before_date.value = ''; after_date.value = '';
@@ -120,6 +114,7 @@ document.addEventListener('DOMContentLoaded', function() {
         buildQuery();
     }
 
+    // ========== History (localStorage) ==========
     function addToHistory(query) {
         if (!query || query === 'Fill in the fields above to build your query...') return;
         const history = JSON.parse(localStorage.getItem('dorkforge_history') || '[]');
@@ -143,40 +138,89 @@ document.addEventListener('DOMContentLoaded', function() {
         `).join('');
     }
 
-    function renderSaved() {
-        const saved = JSON.parse(localStorage.getItem('dorkforge_saved') || '[]');
-        if (saved.length === 0) { savedList.innerHTML = '<span class="simple-empty">No saved queries yet</span>'; return; }
-        savedList.innerHTML = saved.map((item, i) => `
-            <div class="simple-item">
-                <span class="simple-item-query" onclick="window.loadBuilderSaved(${i})" title="${item.query}">${item.query.substring(0, 50)}${item.query.length > 50 ? '...' : ''}</span>
-                <div class="simple-item-actions">
-                    <button class="btn btn-sm btn-danger" onclick="window.deleteBuilderSaved(${i})"><i class="fas fa-trash"></i></button>
-                </div>
-            </div>
-        `).join('');
-    }
-
     window.loadBuilderHistory = function(i) {
         const history = JSON.parse(localStorage.getItem('dorkforge_history') || '[]');
         if (history[i]) { queryDisplay.textContent = history[i].query; queryDisplay.className = 'query-display query-active'; }
     };
+    
     window.deleteBuilderHistory = function(i) {
         const history = JSON.parse(localStorage.getItem('dorkforge_history') || '[]');
         history.splice(i, 1);
         localStorage.setItem('dorkforge_history', JSON.stringify(history));
         renderHistory();
     };
-    window.loadBuilderSaved = function(i) {
-        const saved = JSON.parse(localStorage.getItem('dorkforge_saved') || '[]');
-        if (saved[i]) { queryDisplay.textContent = saved[i].query; queryDisplay.className = 'query-display query-active'; addToHistory(saved[i].query); }
-    };
-    window.deleteBuilderSaved = function(i) {
-        const saved = JSON.parse(localStorage.getItem('dorkforge_saved') || '[]');
-        saved.splice(i, 1);
-        localStorage.setItem('dorkforge_saved', JSON.stringify(saved));
-        renderSaved();
+
+    // ========== Saved Queries (Database API) ==========
+    async function saveCurrentQuery() {
+        const q = queryDisplay.textContent;
+        if (!q || q === 'Fill in the fields above to build your query...') { 
+            alert('No query to save!'); 
+            return; 
+        }
+
+        try {
+            const response = await fetch('/history/api/saved', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: q, title: 'Saved from Builder' })
+            });
+
+            if (response.ok) {
+                const orig = saveBtn.innerHTML;
+                saveBtn.innerHTML = '<i class="fas fa-check"></i> Saved to DB!';
+                setTimeout(() => { saveBtn.innerHTML = orig; }, 1500);
+                renderSaved(); // Refresh the sidebar list
+            } else {
+                alert('Failed to save query to database.');
+            }
+        } catch (error) {
+            console.error('Error saving:', error);
+            alert('Network error while saving.');
+        }
+    }
+
+    async function renderSaved() {
+        try {
+            const response = await fetch('/history/api/saved');
+            const saved = await response.json();
+            
+            if (saved.length === 0) { 
+                savedList.innerHTML = '<span class="simple-empty">No saved queries yet</span>'; 
+                return; 
+            }
+
+            savedList.innerHTML = saved.map((item) => `
+                <div class="simple-item">
+                    <span class="simple-item-query" onclick="window.loadBuilderSaved('${item.query.replace(/'/g, "\\'")}')" title="${item.query}">
+                        ${item.query.substring(0, 50)}${item.query.length > 50 ? '...' : ''}
+                    </span>
+                    <div class="simple-item-actions">
+                        <button class="btn btn-sm btn-danger" onclick="window.deleteBuilderSaved(${item.id})"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+            `).join('');
+        } catch (error) {
+            console.error('Error loading saved:', error);
+            savedList.innerHTML = '<span class="simple-empty">Error loading saved queries</span>';
+        }
+    }
+
+    window.deleteBuilderSaved = async function(id) {
+        try {
+            await fetch(`/history/api/saved/${id}`, { method: 'DELETE' });
+            renderSaved(); // Refresh list
+        } catch (error) {
+            console.error('Error deleting:', error);
+        }
     };
 
+    window.loadBuilderSaved = function(query) {
+        queryDisplay.textContent = query;
+        queryDisplay.className = 'query-display query-active';
+        addToHistory(query);
+    };
+
+    // ========== Event Listeners ==========
     const inputs = [domain, filetype, intitle, inurl, intext, exact, exclude, exclude_site, before_date, after_date, or_terms, custom];
     inputs.forEach(input => { input.addEventListener('input', buildQuery); input.addEventListener('change', buildQuery); });
 
@@ -184,10 +228,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     copyBtn.addEventListener('click', copyQuery);
     openGoogleBtn.addEventListener('click', openInGoogle);
-    saveBtn.addEventListener('click', saveQuery);
+    saveBtn.addEventListener('click', saveCurrentQuery);
     resetBtn.addEventListener('click', resetForm);
 
-    // Auto-load template query from sessionStorage
+    // Auto-load template query from sessionStorage (if coming from Templates page)
     const templateQuery = sessionStorage.getItem('template_query');
     if (templateQuery) {
         queryDisplay.textContent = templateQuery;
@@ -195,6 +239,7 @@ document.addEventListener('DOMContentLoaded', function() {
         sessionStorage.removeItem('template_query');
     }
 
+    // ========== Init ==========
     buildQuery();
     renderHistory();
     renderSaved();
