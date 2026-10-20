@@ -13,7 +13,16 @@ def create_app(config_name='default'):
 
     db.init_app(app)
 
-    # Import and register all blueprints
+    # Import models so SQLAlchemy registers them
+    from app import models  # noqa: F401
+
+    # Create tables and seed template data
+    with app.app_context():
+        db.create_all()
+        from app.services.template_service import seed_templates
+        seed_templates()
+
+    # Register blueprints
     from app.routes import main, builder, ai, templates, history, operators, about
 
     app.register_blueprint(main.bp)
