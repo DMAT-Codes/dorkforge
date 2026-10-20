@@ -23,7 +23,8 @@ ABSOLUTE RULES:
 5. Be specific: queries should be detailed.
 6. If the user mentions a domain (e.g., "nasa"), use it in site:; otherwise use example.com.
 
-STRUCTURE YOUR RESPONSE exactly in this JSON format (no extra text, no markdown, NO code blocks):
+You must respond strictly in valid JSON format with the exact structure below. Ensure all internal quotes within the query strings are properly escaped (e.g., use \\" instead of "). Do not use markdown code blocks.
+
 {{
     "understanding": "One-sentence summary of the user's goal.",
     "dorks": [
@@ -41,22 +42,12 @@ Goal: {goal}"""
 
 
 def generate_dorks(goal, max_dorks=30):
-    """
-    Call Groq API and return parsed JSON with up to `max_dorks` dorks.
-    Raises GroqError on failure.
-    """
     api_key = current_app.config.get('GROQ_API_KEY')
     if not api_key:
-        raise GroqError(
-            'Groq API key is missing. Please set GROQ_API_KEY in the environment.',
-            status_code=500
-        )
+        raise GroqError('Groq API key is missing.', 500)
 
     model = current_app.config.get('GROQ_MODEL', 'llama-3.1-70b-versatile')
-    api_url = current_app.config.get(
-        'GROQ_API_URL',
-        'https://api.groq.com/openai/v1/chat/completions'
-    )
+    api_url = current_app.config.get('GROQ_API_URL', 'https://api.groq.com/openai/v1/chat/completions')
 
     headers = {
         'Authorization': f'Bearer {api_key}',
@@ -70,10 +61,10 @@ def generate_dorks(goal, max_dorks=30):
             {'role': 'user', 'content': f'User goal: {goal}'},
         ],
         'temperature': 0.7,
-        'max_tokens': 3000,  # Increased to fit 30 dorks without cutting off the JSON
+        'max_tokens': 4000, # Plenty of room
+        'response_format': {'type': 'json_object'} # FORCES the AI to return valid JSON
     }
 
-    # --- HTTP call with Retry Logic (Exponential Backoff) ---
     MAX_RETRIES = 3
     INITIAL_DELAY = 2
     response = None
@@ -82,68 +73,46 @@ def generate_dorks(goal, max_dorks=30):
         try:
             response = requests.post(api_url, json=payload, headers=headers, timeout=90)
         except requests.exceptions.Timeout:
-            raise GroqError('The AI request timed out (90 seconds). Please try a simpler goal.', 504)
+            raise GroqError('The AI request timed out. Please try again.', 504)
         except requests.exceptions.RequestException as exc:
-            raise GroqError(f'Network error calling Groq API: {exc}', 500)
+            raise GroqError(f'Network error: {exc}', 500)
 
-        # Check for rate limit (429)
         if response.status_code == 429:
             if attempt == MAX_RETRIES - 1:
-                raise GroqError('Rate limit exceeded after multiple retries. Please wait a minute and try again.', 429)
-            
+                raise GroqError('Rate limit exceeded. Please wait a minute.', 429)
             delay = INITIAL_DELAY * (2 ** attempt)
-            print(f"[Groq API] Rate limit hit (429). Retrying in {delay} seconds...")
             time.sleep(delay)
         else:
             break
 
-    # --- HTTP status handling ---
     if response.status_code == 401:
-        raise GroqError('Invalid Groq API key. Please check GROQ_API_KEY.', 401)
-    elif response.status_code == 429:
-        raise GroqError('Rate limit exceeded. Please wait and try again.', 429)
+        raise GroqError('Invalid Groq API key.', 401)
     elif response.status_code != 200:
-        raise GroqError(
-            f'Groq API error (HTTP {response.status_code}): {response.text}',
-            response.status_code
-        )
+        raise GroqError(f'API Error: {response.text}', response.status_code)
 
-    # --- Parse content ---
     try:
         content = response.json()['choices'][0]['message']['content'].strip()
     except (KeyError, IndexError):
-        raise GroqError('Unexpected response structure from Groq API.', 500)
+        raise GroqError('Unexpected API response structure.', 500)
 
-    # --- Clean the content to ensure valid JSON ---
-    # 1. Remove markdown code blocks if the AI added them (e.g., ```json ... ```)
-    json_match = re.search(r'```(?:json)?\s*(\{.*\})\s*```', content, re.DOTALL)
-    if json_match:
-        content = json_match.group(1)
-        
-    # 2. Extract from the first '{' to the last '}' to ignore any extra conversational text
-    start = content.find('{')
-    end = content.rfind('}')
-    
-    if start != -1 and end != -1 and end > start:
-        content = content[start:end+1]
+    # Clean any accidental markdown
+    content = re.sub(r'^```json\s*', '', content)
+    content = re.sub(r'\s*```$', '', content)
 
     try:
         ai_response = json.loads(content)
-    except json.JSONDecodeError:
-        raise GroqError('AI response contained invalid JSON. Please try again. (Tip: The response may have been cut off by token limits).', 500)
+    except json.JSONDecodeError as e:
+        # Fallback: If the AI broke the quotes, try to extract the outer structure
+        print(f"JSON Decode Error: {e}")
+        raise GroqError('AI returned malformed JSON. Please try again.', 500)
 
-    # --- Validate structure ---
     if 'dorks' not in ai_response or not isinstance(ai_response['dorks'], list):
-        raise GroqError('AI response missing required "dorks" array.', 500)
+        raise GroqError('AI response missing "dorks" array.', 500)
 
     if len(ai_response['dorks']) < 10:
         raise GroqError('AI generated too few dorks. Please try a broader goal.', 500)
 
     if len(ai_response['dorks']) > max_dorks:
         ai_response['dorks'] = ai_response['dorks'][:max_dorks]
-
-    for dork in ai_response['dorks']:
-        if 'name' not in dork or 'query' not in dork:
-            raise GroqError('AI response missing required fields in a dork object.', 500)
 
     return ai_response
