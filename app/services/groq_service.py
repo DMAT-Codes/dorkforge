@@ -23,7 +23,7 @@ ABSOLUTE RULES:
 5. Be specific: queries should be detailed.
 6. If the user mentions a domain (e.g., "nasa"), use it in site:; otherwise use example.com.
 
-STRUCTURE YOUR RESPONSE exactly in this JSON format (no extra text, no markdown):
+STRUCTURE YOUR RESPONSE exactly in this JSON format (no extra text, no markdown, NO code blocks):
 {{
     "understanding": "One-sentence summary of the user's goal.",
     "dorks": [
@@ -70,7 +70,7 @@ def generate_dorks(goal, max_dorks=30):
             {'role': 'user', 'content': f'User goal: {goal}'},
         ],
         'temperature': 0.7,
-        'max_tokens': 1500,  # Lowered to prevent rate limiting
+        'max_tokens': 3000,  # Increased to fit 30 dorks without cutting off the JSON
     }
 
     # --- HTTP call with Retry Logic (Exponential Backoff) ---
@@ -95,7 +95,6 @@ def generate_dorks(goal, max_dorks=30):
             print(f"[Groq API] Rate limit hit (429). Retrying in {delay} seconds...")
             time.sleep(delay)
         else:
-            # If it's not 429, break the loop to handle other status codes below
             break
 
     # --- HTTP status handling ---
@@ -115,17 +114,23 @@ def generate_dorks(goal, max_dorks=30):
     except (KeyError, IndexError):
         raise GroqError('Unexpected response structure from Groq API.', 500)
 
-    # --- Parse JSON (with regex fallback) ---
+    # --- Clean the content to ensure valid JSON ---
+    # 1. Remove markdown code blocks if the AI added them (e.g., ```json ... ```)
+    json_match = re.search(r'```(?:json)?\s*(\{.*\})\s*```', content, re.DOTALL)
+    if json_match:
+        content = json_match.group(1)
+        
+    # 2. Extract from the first '{' to the last '}' to ignore any extra conversational text
+    start = content.find('{')
+    end = content.rfind('}')
+    
+    if start != -1 and end != -1 and end > start:
+        content = content[start:end+1]
+
     try:
         ai_response = json.loads(content)
     except json.JSONDecodeError:
-        match = re.search(r'\{.*\}', content, re.DOTALL)
-        if not match:
-            raise GroqError('AI did not return valid JSON. Please try again.', 500)
-        try:
-            ai_response = json.loads(match.group())
-        except json.JSONDecodeError:
-            raise GroqError('AI response contained invalid JSON.', 500)
+        raise GroqError('AI response contained invalid JSON. Please try again. (Tip: The response may have been cut off by token limits).', 500)
 
     # --- Validate structure ---
     if 'dorks' not in ai_response or not isinstance(ai_response['dorks'], list):
