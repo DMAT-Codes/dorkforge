@@ -27,6 +27,8 @@
                 </a>
             </div>
             
+            <!-- Desktop Navigation Links (Only show if logged in) -->
+            {% if current_user.is_authenticated %}
             <div class="nav-links">
                 <a href="{{ url_for('main.index') }}" class="nav-link {% if request.endpoint == 'main.index' %}active{% endif %}">
                     <i class="fas fa-home"></i> Dashboard
@@ -47,6 +49,18 @@
                     <i class="fas fa-graduation-cap"></i> Guide
                 </a>
             </div>
+            {% endif %}
+
+            <!-- Auth Links (Desktop) -->
+            <div class="nav-auth">
+                {% if current_user.is_authenticated %}
+                    <span class="user-greeting">👤 {{ current_user.Username }}</span>
+                    <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-secondary">Logout</a>
+                {% else %}
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-secondary">Login</a>
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-sm btn-primary">Register</a>
+                {% endif %}
+            </div>
 
             <!-- Theme Switcher -->
             <div class="nav-actions">
@@ -55,64 +69,46 @@
                         <i class="fas fa-palette"></i>
                     </button>
                     <div class="theme-dropdown" id="themeDropdown">
-                        <button class="theme-option" data-theme="cyber">
-                            <span class="theme-dot" style="background: linear-gradient(135deg, #0a0e14, #1a2332, #3b82f6);"></span>
-                            Cyber
-                        </button>
-                        <button class="theme-option" data-theme="night">
-                            <span class="theme-dot" style="background: linear-gradient(135deg, #0d0d0d, #1a1a2e, #16213e);"></span>
-                            Night
-                        </button>
-                        <button class="theme-option" data-theme="ocean">
-                            <span class="theme-dot" style="background: linear-gradient(135deg, #0a1628, #0f2847, #1a5276);"></span>
-                            Ocean
-                        </button>
-                        <button class="theme-option" data-theme="aurora">
-                            <span class="theme-dot" style="background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);"></span>
-                            Aurora
-                        </button>
-                        <button class="theme-option" data-theme="forest">
-                            <span class="theme-dot" style="background: linear-gradient(135deg, #0a1f0a, #1a3a1a, #2d5a2d);"></span>
-                            Forest
-                        </button>
-                        <button class="theme-option" data-theme="light">
-                            <span class="theme-dot" style="background: linear-gradient(135deg, #f0f0f0, #ffffff, #e8ecf1);"></span>
-                            Light
-                        </button>
+                        <button class="theme-option" data-theme="cyber"><span class="theme-dot" style="background: linear-gradient(135deg, #0a0e14, #1a2332, #3b82f6);"></span>Cyber</button>
+                        <button class="theme-option" data-theme="night"><span class="theme-dot" style="background: linear-gradient(135deg, #0d0d0d, #1a1a2e, #16213e);"></span>Night</button>
+                        <button class="theme-option" data-theme="ocean"><span class="theme-dot" style="background: linear-gradient(135deg, #0a1628, #0f2847, #1a5276);"></span>Ocean</button>
+                        <button class="theme-option" data-theme="aurora"><span class="theme-dot" style="background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);"></span>Aurora</button>
+                        <button class="theme-option" data-theme="forest"><span class="theme-dot" style="background: linear-gradient(135deg, #0a1f0a, #1a3a1a, #2d5a2d);"></span>Forest</button>
+                        <button class="theme-option" data-theme="light"><span class="theme-dot" style="background: linear-gradient(135deg, #f0f0f0, #ffffff, #e8ecf1);"></span>Light</button>
                     </div>
                 </div>
             </div>
 
-            <!-- Mobile Menu -->
+            <!-- Mobile Menu Toggle -->
             <button class="nav-toggle" id="navToggle"><i class="fas fa-bars"></i></button>
         </div>
 
-        <!-- Mobile Navigation -->
+        <!-- Mobile Navigation (Only show links if logged in) -->
         <div class="nav-mobile" id="navMobile">
-            <a href="{{ url_for('main.index') }}" class="nav-mobile-link {% if request.endpoint == 'main.index' %}active{% endif %}">
-                <i class="fas fa-home"></i> Dashboard
-            </a>
-            <a href="{{ url_for('ai.index') }}" class="nav-mobile-link {% if request.endpoint == 'ai.index' %}active{% endif %}">
-                <i class="fas fa-robot"></i> AI Assistant
-            </a>
-            <a href="{{ url_for('builder.index') }}" class="nav-mobile-link {% if request.endpoint == 'builder.index' %}active{% endif %}">
-                <i class="fas fa-wrench"></i> Builder
-            </a>
-            <a href="{{ url_for('templates.index') }}" class="nav-mobile-link {% if request.endpoint == 'templates.index' %}active{% endif %}">
-                <i class="fas fa-book"></i> Templates
-            </a>
-            <a href="{{ url_for('history.index') }}" class="nav-mobile-link {% if request.endpoint == 'history.index' %}active{% endif %}">
-                <i class="fas fa-history"></i> History
-            </a>
-            <a href="{{ url_for('operators.index') }}" class="nav-mobile-link {% if request.endpoint == 'operators.index' %}active{% endif %}">
-                <i class="fas fa-graduation-cap"></i> Guide
-            </a>
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('main.index') }}" class="nav-mobile-link"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="{{ url_for('ai.index') }}" class="nav-mobile-link"><i class="fas fa-robot"></i> AI Assistant</a>
+                <a href="{{ url_for('builder.index') }}" class="nav-mobile-link"><i class="fas fa-wrench"></i> Builder</a>
+                <a href="{{ url_for('templates.index') }}" class="nav-mobile-link"><i class="fas fa-book"></i> Templates</a>
+                <a href="{{ url_for('history.index') }}" class="nav-mobile-link"><i class="fas fa-history"></i> History</a>
+                <a href="{{ url_for('operators.index') }}" class="nav-mobile-link"><i class="fas fa-graduation-cap"></i> Guide</a>
+            {% endif %}
+            
+            <!-- Mobile Auth Links -->
+            <div style="border-top: 1px solid var(--border-color); margin: 0.5rem 0; padding-top: 0.5rem;">
+                {% if current_user.is_authenticated %}
+                    <span style="display:block; color:var(--text-muted); font-size:0.8rem; margin-bottom:0.5rem;">Logged in as {{ current_user.Username }}</span>
+                    <a href="{{ url_for('auth.logout') }}" class="nav-mobile-link"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                {% else %}
+                    <a href="{{ url_for('auth.login') }}" class="nav-mobile-link"><i class="fas fa-sign-in-alt"></i> Login</a>
+                    <a href="{{ url_for('auth.register') }}" class="nav-mobile-link"><i class="fas fa-user-plus"></i> Register</a>
+                {% endif %}
+            </div>
         </div>
     </nav>
 
     <!-- Main Content -->
     <main class="main-content">
-        <!-- Background Effects -->
         <div class="bg-effects">
             <div class="bg-glow glow-1"></div>
             <div class="bg-glow glow-2"></div>
@@ -155,16 +151,13 @@
         </div>
     </footer>
 
-    <!-- Theme & Menu JavaScript -->
     <script>
-        // Theme Switcher
         document.addEventListener('DOMContentLoaded', function() {
             const toggle = document.getElementById('themeToggle');
             const dropdown = document.getElementById('themeDropdown');
             const themeOptions = document.querySelectorAll('.theme-option');
             const body = document.body;
 
-            // Load saved theme
             const savedTheme = localStorage.getItem('dorkforge_theme') || 'cyber';
             body.setAttribute('data-theme', savedTheme);
             updateActiveTheme(savedTheme);
@@ -194,11 +187,10 @@
                     opt.classList.toggle('active', opt.dataset.theme === theme);
                 });
             }
-        });
 
-        // Mobile Menu
-        document.getElementById('navToggle').addEventListener('click', function() {
-            document.getElementById('navMobile').classList.toggle('open');
+            document.getElementById('navToggle').addEventListener('click', function() {
+                document.getElementById('navMobile').classList.toggle('open');
+            });
         });
     </script>
 
