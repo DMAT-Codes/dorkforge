@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.key === 'Enter') generateQuery();
     });
 
-    // --- Live character counter (optional UX nicety) ---
+    // --- Live character counter ---
     goalInput.addEventListener('input', function() {
         const len = this.value.trim().length;
         if (len > MAX_GOAL_LENGTH) {
@@ -64,11 +64,10 @@ document.addEventListener('DOMContentLoaded', function() {
             body: JSON.stringify({ goal: goal })
         })
         .then(response => {
-            // Handle non-JSON error responses (e.g. 500 HTML page)
             const contentType = response.headers.get('content-type') || '';
             if (!contentType.includes('application/json')) {
                 return response.text().then(text => {
-                    throw new Error(`Server returned ${response.status}: ${text.substring(0, 200)}`);
+                    throw new Error(`Server returned ${response.status}: ${text.substring(0, 100)}`);
                 });
             }
             return response.json();
@@ -78,9 +77,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (data.error) {
                 aiResponse.style.display = 'block';
-                aiDorksList.innerHTML = `<div class="ai-error">❌ ${data.error}</div>`;
-                aiUnderstanding.textContent = 'Error occurred. Please check your configuration.';
+                aiUnderstanding.textContent = 'Could not generate dorks at this time.';
                 aiResponsible.textContent = '';
+                
+                // Clean, friendly warning UI
+                aiDorksList.innerHTML = `
+                    <div class="ai-error" style="background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; color: #f59e0b; padding: 1.5rem; border-radius: 8px; text-align: center; font-weight: 500; margin-top: 1rem;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 1.5rem; margin-bottom: 0.5rem; display: block;"></i>
+                        ${data.error}
+                    </div>
+                `;
                 return;
             }
 
@@ -89,9 +95,14 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => {
             loadingIndicator.style.display = 'none';
             aiResponse.style.display = 'block';
-            aiDorksList.innerHTML = `<div class="ai-error">❌ Network error: ${error.message}</div>`;
-            aiUnderstanding.textContent = 'Error occurred. Please try again.';
-            aiResponsible.textContent = '';
+            aiUnderstanding.textContent = 'Network Error';
+            
+            aiDorksList.innerHTML = `
+                <div class="ai-error" style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #ef4444; padding: 1.5rem; border-radius: 8px; text-align: center; font-weight: 500; margin-top: 1rem;">
+                    <i class="fas fa-wifi" style="font-size: 1.5rem; margin-bottom: 0.5rem; display: block;"></i>
+                    Failed to connect to the server. Please check your internet connection and try again.
+                </div>
+            `;
         });
     }
 
@@ -99,10 +110,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Render the AI response
     // ============================================================
     function displayResponse(data) {
-        // Understanding
         aiUnderstanding.textContent = data.understanding || 'No explanation provided.';
-
-        // Dorks list
         aiDorksList.innerHTML = '';
 
         if (data.dorks && data.dorks.length > 0) {
@@ -110,7 +118,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const card = document.createElement('div');
                 card.className = 'ai-dork-card';
 
-                // Escape user-visible strings to prevent HTML injection
+                // Escape user-visible strings to prevent HTML injection (XSS)
                 const name = escapeHtml(dork.name || 'Unnamed Dork');
                 const query = escapeHtml(dork.query || '');
                 const explanation = escapeHtml(dork.explanation || 'No explanation provided.');
@@ -139,19 +147,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 aiDorksList.appendChild(card);
             });
 
-            // Attach per-dork action handlers
             attachDorkActions();
-
-            // Show "Execute All" button
             executeAllContainer.style.display = 'block';
         } else {
             aiDorksList.innerHTML = '<p class="ai-empty">No dorks generated. Please try a different goal.</p>';
         }
 
-        // Responsible use
         aiResponsible.textContent = data.responsible_use || 'Only search authorized targets.';
-
-        // Show response
         aiResponse.style.display = 'block';
     }
 
@@ -159,6 +161,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Attach click handlers to copy / open / save buttons
     // ============================================================
     function attachDorkActions() {
+        // COPY
         document.querySelectorAll('.ai-copy-dork').forEach(btn => {
             btn.addEventListener('click', function() {
                 const q = this.dataset.query;
@@ -167,7 +170,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 navigator.clipboard.writeText(q)
                     .then(() => showFeedback(this, '<i class="fas fa-check"></i> Copied!'))
                     .catch(() => {
-                        // Fallback for older browsers / non-HTTPS contexts
                         const ta = document.createElement('textarea');
                         ta.value = q;
                         document.body.appendChild(ta);
@@ -179,6 +181,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
 
+        // OPEN
         document.querySelectorAll('.ai-open-dork').forEach(btn => {
             btn.addEventListener('click', function() {
                 const q = this.dataset.query;
@@ -188,16 +191,25 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
 
+        // SAVE (UPDATED TO USE DATABASE API)
         document.querySelectorAll('.ai-save-dork').forEach(btn => {
             btn.addEventListener('click', function() {
                 const q = this.dataset.query;
                 if (!q) return;
 
-                const saved = JSON.parse(localStorage.getItem('dorkforge_saved') || '[]');
-                saved.push({ query: q, timestamp: new Date().toISOString() });
-                localStorage.setItem('dorkforge_saved', JSON.stringify(saved));
-
-                showFeedback(this, '<i class="fas fa-check"></i> Saved!');
+                fetch('/history/api/saved', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: q, title: 'Saved from AI Assistant' })
+                }).then(response => {
+                    if (response.ok) {
+                        showFeedback(this, '<i class="fas fa-check"></i> Saved to DB!');
+                    } else {
+                        alert('Please log in to save queries to your account.');
+                    }
+                }).catch(() => {
+                    alert('Error connecting to the database.');
+                });
             });
         });
     }
@@ -246,7 +258,6 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Confirm before opening many tabs
         if (queries.length > 5) {
             if (!confirm(`This will open ${queries.length} new tabs. Continue?`)) {
                 return;
