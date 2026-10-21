@@ -55,6 +55,14 @@
             <div class="nav-auth">
                 {% if current_user.is_authenticated %}
                     <span class="user-greeting">👤 {{ current_user.Username }}</span>
+                    
+                    <!-- Delete Profile Button -->
+                    <form action="{{ url_for('auth.delete_profile') }}" method="POST" style="display:inline; margin: 0 0.5rem;">
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('WARNING: Are you sure you want to permanently delete your profile and all saved queries? This cannot be undone.');">
+                            <i class="fas fa-user-times"></i> Delete Profile
+                        </button>
+                    </form>
+
                     <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-secondary">Logout</a>
                 {% else %}
                     <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-secondary">Login</a>
@@ -83,7 +91,7 @@
             <button class="nav-toggle" id="navToggle"><i class="fas fa-bars"></i></button>
         </div>
 
-        <!-- Mobile Navigation (Only show links if logged in) -->
+        <!-- Mobile Navigation -->
         <div class="nav-mobile" id="navMobile">
             {% if current_user.is_authenticated %}
                 <a href="{{ url_for('main.index') }}" class="nav-mobile-link"><i class="fas fa-home"></i> Dashboard</a>
@@ -98,6 +106,14 @@
             <div style="border-top: 1px solid var(--border-color); margin: 0.5rem 0; padding-top: 0.5rem;">
                 {% if current_user.is_authenticated %}
                     <span style="display:block; color:var(--text-muted); font-size:0.8rem; margin-bottom:0.5rem;">Logged in as {{ current_user.Username }}</span>
+                    
+                    <!-- Mobile Delete Profile -->
+                    <form action="{{ url_for('auth.delete_profile') }}" method="POST" style="margin-bottom: 0.5rem;">
+                        <button type="submit" class="nav-mobile-link" style="color: var(--accent-red); width: 100%; text-align: left; background: none; border: none; cursor: pointer; padding: 0.75rem 0;" onclick="return confirm('WARNING: Are you sure you want to permanently delete your profile and all saved queries? This cannot be undone.');">
+                            <i class="fas fa-user-times"></i> Delete Profile
+                        </button>
+                    </form>
+
                     <a href="{{ url_for('auth.logout') }}" class="nav-mobile-link"><i class="fas fa-sign-out-alt"></i> Logout</a>
                 {% else %}
                     <a href="{{ url_for('auth.login') }}" class="nav-mobile-link"><i class="fas fa-sign-in-alt"></i> Login</a>

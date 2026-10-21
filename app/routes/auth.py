@@ -65,42 +65,21 @@ def logout():
 
 
 # =========================================================
-# ADMIN PANEL ROUTES
+# DELETE PROFILE ROUTE
 # =========================================================
-
-@bp.route('/admin/users')
+@bp.route('/delete_profile', methods=['POST'])
 @login_required
-def admin_users():
-    """View all registered users (Admin Only)."""
-    # Only allow the first registered user (ID 1) to see this page
-    if current_user.User_ID != 1:
-        flash('Unauthorized access. Only administrators can view this page.', 'error')
-        return redirect(url_for('main.index'))
-        
-    users = User.query.order_by(User.User_ID.asc()).all()
-    return render_template('admin_users.html', users=users)
-
-
-@bp.route('/admin/users/delete/<int:user_id>', methods=['POST'])
-@login_required
-def delete_user(user_id):
-    """Delete a specific user (Admin Only)."""
-    # Only allow admin to delete users
-    if current_user.User_ID != 1:
-        flash('Unauthorized access.', 'error')
-        return redirect(url_for('main.index'))
-        
-    # Prevent admin from deleting their own account
-    if user_id == current_user.User_ID:
-        flash('You cannot delete your own admin account.', 'error')
-        return redirect(url_for('auth.admin_users'))
-
-    user = User.query.get(user_id)
+def delete_profile():
+    """Allow a logged-in user to delete their own account."""
+    user = User.query.get(current_user.User_ID)
+    
+    # Log the user out before deleting them
+    logout_user()
+    
+    # Delete user from database (saved queries will cascade delete automatically)
     if user:
         db.session.delete(user)
         db.session.commit()
-        flash(f'User "{user.Username}" has been successfully deleted.', 'success')
-    else:
-        flash('User not found.', 'error')
-    
-    return redirect(url_for('auth.admin_users'))
+        flash('Your account and all saved queries have been permanently deleted.', 'success')
+        
+    return redirect(url_for('auth.register'))
