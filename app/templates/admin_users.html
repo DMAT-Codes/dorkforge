@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Admin Panel{% endblock %}
+{% block content %}
+<div class="history-page">
+    <div class="history-header">
+        <h1 class="history-title">🛡️ Admin Panel</h1>
+        <p class="history-subtitle">Manage registered users.</p>
+    </div>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="history-list">
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+                <tr style="border-bottom: 2px solid var(--border-color);">
+                    <th style="padding: 1rem;">ID</th>
+                    <th style="padding: 1rem;">Username</th>
+                    <th style="padding: 1rem;">Email</th>
+                    <th style="padding: 1rem;">Joined Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr style="border-bottom: 1px solid var(--border-light);">
+                    <td style="padding: 1rem;">{{ user.User_ID }}</td>
+                    <td style="padding: 1rem; font-weight: 600; color: var(--accent-primary);">{{ user.Username }}</td>
+                    <td style="padding: 1rem;">{{ user.Email }}</td>
+                    <td style="padding: 1rem;">{{ user.Created_At.strftime('%Y-%m-%d') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

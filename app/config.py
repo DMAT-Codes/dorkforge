@@ -6,7 +6,15 @@ load_dotenv()
 class Config:
     """Base configuration."""
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
-    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:///dorkforge.db')
+    
+    # Get the database URL from Render's environment variables
+    database_url = os.getenv('DATABASE_URL', 'sqlite:///dorkforge.db')
+    
+    # Render uses 'postgres://', but SQLAlchemy needs 'postgresql://'
+    if database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+        
+    SQLALCHEMY_DATABASE_URI = database_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # Groq API Settings

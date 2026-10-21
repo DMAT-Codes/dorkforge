@@ -33,6 +33,7 @@ def register():
 
     return render_template('register.html')
 
+
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -54,9 +55,26 @@ def login():
 
     return render_template('login.html')
 
+
 @bp.route('/logout')
 @login_required
 def logout():
     logout_user()
     flash('You have been logged out.', 'info')
     return redirect(url_for('main.index'))
+
+
+# =========================================================
+# NEW ADMIN PANEL ROUTE
+# =========================================================
+@bp.route('/admin/users')
+@login_required
+def admin_users():
+    # Only allow the first registered user (ID 1) to see this page
+    if current_user.User_ID != 1:
+        flash('Unauthorized access. Only administrators can view this page.', 'error')
+        return redirect(url_for('main.index'))
+        
+    # Fetch all users from the database
+    users = User.query.all()
+    return render_template('admin_users.html', users=users)
